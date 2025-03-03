@@ -1,7 +1,9 @@
 package com.agenda.service;
 
 import com.agenda.domain.Contato;
+import com.agenda.domain.Usuario;
 import com.agenda.repository.ContatoRepository;
+import jakarta.persistence.EntityNotFoundException;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -9,7 +11,6 @@ import java.util.List;
 import java.util.Optional;
 
 @Service
-@Transactional
 public class ContatoService {
 
     private final ContatoRepository contatoRepository;
@@ -19,29 +20,35 @@ public class ContatoService {
     }
 
     @Transactional(readOnly = true)
-    public List<Contato> listarTodos() {
-        return contatoRepository.findAll();
+    public List<Contato> listarTodos(Usuario usuario) {
+        return contatoRepository.findByUsuario(usuario);
     }
 
     @Transactional(readOnly = true)
-    public Optional<Contato> buscarPorId(Long id) {
-        return contatoRepository.findById(id);
+    public Optional<Contato> buscarPorId(Long id, Long usuarioId) {
+        return contatoRepository.findByIdAndUsuarioId(id, usuarioId);
     }
 
+    @Transactional
     public Contato salvar(Contato contato) {
         return contatoRepository.save(contato);
     }
 
-    public Optional<Contato> atualizar(Long id, Contato contato) {
-        return contatoRepository.findById(id)
+    @Transactional
+    public Optional<Contato> atualizar(Long id, Contato contato, Long usuarioId) {
+        return buscarPorId(id, usuarioId)
                 .map(contatoExistente -> {
-                    contato.setId(id);
-                    return contatoRepository.save(contato);
+                    contatoExistente.setNome(contato.getNome());
+                    contatoExistente.setTelefone(contato.getTelefone());
+                    contatoExistente.setEmail(contato.getEmail());
+                    contatoExistente.setEndereco(contato.getEndereco());
+                    return contatoRepository.save(contatoExistente);
                 });
     }
 
-    public boolean deletar(Long id) {
-        return contatoRepository.findById(id)
+    @Transactional
+    public boolean deletar(Long id, Long usuarioId) {
+        return buscarPorId(id, usuarioId)
                 .map(contato -> {
                     contatoRepository.delete(contato);
                     return true;
